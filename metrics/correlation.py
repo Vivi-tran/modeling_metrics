@@ -136,7 +136,7 @@ def correlation(
         return pd.DataFrame()
 
 
-def build_correlation_parser(arg) -> argparse.ArgumentParser:
+def build_correlation_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Compute Pearson/Spearman correlation vs DockQ."
     )
