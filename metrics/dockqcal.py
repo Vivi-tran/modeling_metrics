@@ -53,7 +53,8 @@ def define_path(model_dir: str, native_dir: str) -> pd.DataFrame:
         list(zip(model_paths, native_paths, json_paths)),
         columns=["model_path", "native_path", "json_path"],
     )
-    df = df.merge(df_native, on="id", how="left", suffixes=("_model", "_native"))
+    df = df.merge(df_native, on="id", how="right", suffixes=("_model", "_native"))
+    df.to_csv(os.path.join(model_dir, "debug_dockq_input.csv"), index=False)
     return df
 
 
