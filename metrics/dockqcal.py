@@ -206,8 +206,7 @@ def main() -> pd.DataFrame:
     with open(log_file, 'a') as f:
         f.write(f"Final DataFrame shape: {df_results.shape}\n")
     df_results = df_results.drop(columns=["model_path", "native_path", "json_path"])
-    output_path_parent = os.path.dirname(output_path)
-    output_path_final = os.path.join(output_path_parent, f"{name}.dockq.csv")
+    output_path_final = os.path.join(os.path.dirname(output_path), f"{name}.dockq.csv")
 
     with open(log_file, 'a') as f:
         f.write(f"Actual output path: {output_path_final}\n")
