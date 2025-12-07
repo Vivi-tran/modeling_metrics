@@ -157,10 +157,11 @@ def main() -> pd.DataFrame:
 
     model_dir = model_tar.replace('.tar', '')
     native_dir = os.path.join(os.path.dirname(native_tar), 'natives')
-
+    # /home/nguyen/benchmarks/modeling/out/data/Chai-1/.c65a848c554721cacf9e59e8f1319d5df0ad6037bfecff2949df2f3f2a4ba569/Chai-1.tar
+    # /home/nguyen/benchmarks/modeling/out/data/Chai-1/.c65a848c554721cacf9e59e8f1319d5df0ad6037bfecff2949df2f3f2a4ba569/Chai-1/Beta_endorphin-mu_opioid_1.cif
     df = define_path(model_dir, native_dir)
     results = []
-
+    print(model_dir)
     tmp_dir = os.path.join(model_dir, "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
     
