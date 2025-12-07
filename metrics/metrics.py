@@ -78,6 +78,7 @@ def main() -> None:
         original_argv = sys.argv
         sys.argv = ['-dockq', '--data.models', getattr(args, 'data.models'), '--data.natives', getattr(args, 'data.natives'), '--output_dir', args.output_dir, '--name', args.name]
         try:
+            print(sys.argv)
             dockq_main()
         finally:
             sys.argv = original_argv
