@@ -128,7 +128,7 @@ def build_dockq_parser() -> argparse.ArgumentParser:
         help="Path to native tar file (e.g., AFm.natives.tar).",
     )
     parser.add_argument(
-        "--output",
+        "--output_dir",
         required=True,
         help="Path to write DockQ values added to the metadata table.",
     )
@@ -146,7 +146,7 @@ def main() -> pd.DataFrame:
     args = parser.parse_args()
     model_tar = getattr(args, 'data.models')
     native_tar = getattr(args, 'data.natives')
-    output_path = getattr(args, 'output')
+    output_path = getattr(args, 'output_dir')
     name = getattr(args, 'name')
 
     with tarfile.open(model_tar, 'r') as tar:

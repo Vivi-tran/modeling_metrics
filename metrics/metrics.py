@@ -41,10 +41,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to model data table (CSV) with features and 'dockq' column.",
     )
     parser.add_argument(
-        "--data.correlation",
-        help="Output path for correlation table (CSV/TSV decided by extension).",
-    )
-    parser.add_argument(
         "--metrics",
         default="pearson,spearman",
         help="Comma-separated list of correlation metrics to compute (Available: pearson,spearman).",
@@ -62,7 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
     
     # Common arguments
     parser.add_argument(
-        "--output",
+        "--output_dir",
         help="Path to write output file.",
     )
     parser.add_argument(
@@ -79,13 +75,13 @@ def main() -> None:
 
     if args.dockq:
         # Validate required arguments for dockq
-        if not getattr(args, 'data.models') or not getattr(args, 'data.natives') or not args.output:
-            parser.error("--dockq requires --data.models, --data.natives, and --output")    
+        if not getattr(args, 'data.models') or not getattr(args, 'data.natives') or not args.output_dir:
+            parser.error("--dockq requires --data.models, --data.natives, and --output_dir")    
             
         from metrics.dockqcal import main as dockq_main
         
         original_argv = sys.argv
-        sys.argv = ['-dockq', '--data.models', getattr(args, 'data.models'), '--data.natives', getattr(args, 'data.natives'), '--output', args.output, '--name', args.name]
+        sys.argv = ['-dockq', '--data.models', getattr(args, 'data.models'), '--data.natives', getattr(args, 'data.natives'), '--output_dir', args.output_dir, '--name', args.name]
         try:
             dockq_main()
         finally:
@@ -93,14 +89,14 @@ def main() -> None:
             
     elif args.correlation:
         # Validate required arguments for correlation
-        if not getattr(args, 'data.dockq') or not getattr(args, 'data.correlation'):
-            parser.error("--correlation requires --data.dockq and --data.correlation")
-            
+        if not getattr(args, 'data.dockq') or not getattr(args, 'output_dir'):
+            parser.error("--correlation requires --data.dockq and --output_dir")
+
         try:
             from metrics.correlation import main as corr_main
             
             original_argv = sys.argv
-            sys.argv = ['--correlation', '--data.dockq', getattr(args, 'data.dockq'), '--data.correlation', getattr(args, 'data.correlation'), 
+            sys.argv = ['--correlation', '--data.dockq', getattr(args, 'data.dockq'), '--output_dir', getattr(args, 'output_dir'),
                        '--metrics', args.metrics, '--features', args.features, '--methods', args.methods, '--name', args.name]
             try:
                 corr_main()

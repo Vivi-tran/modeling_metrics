@@ -154,7 +154,7 @@ def build_correlation_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--data.correlation",
+        "--output_dir",
         required=True,
         help="Output path for correlation table (CSV/TSV decided by extension).",
     )
@@ -194,7 +194,7 @@ def main() -> None:
 
     # Load main data
     data_path = getattr(args, 'data.dockq')
-    output_path = getattr(args, 'data.correlation')
+    output_path = getattr(args, 'output_dir')
     name = getattr(args, 'name')
     df = pd.read_csv(data_path)
 
