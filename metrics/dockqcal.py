@@ -189,9 +189,13 @@ def main() -> pd.DataFrame:
             if dockq_score is not None:
                 dockq_score = round(dockq_score, 3)
             results.append(dockq_score)
-    finally:
-        if os.path.exists(tmp_dir):
-            shutil.rmtree(tmp_dir)  
+    except Exception as e:
+        with open(log_file, 'a') as f:
+            f.write(f"Error during DockQ calculation: {e}\n")
+        raise e
+    # finally:
+    #     if os.path.exists(tmp_dir):
+    #         shutil.rmtree(tmp_dir)  
     
     df_results = df.copy()
     df_results["dockq"] = results
