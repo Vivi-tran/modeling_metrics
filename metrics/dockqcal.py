@@ -132,6 +132,11 @@ def build_dockq_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to write DockQ values added to the metadata table.",
     )
+    parser.add_argument(
+        "--name",
+        default="AFMultimer",
+        help="Name of the modeling method (default: AFMultimer).",
+    )
 
     return parser
 
@@ -142,6 +147,7 @@ def main() -> pd.DataFrame:
     model_tar = getattr(args, 'data.models')
     native_tar = getattr(args, 'data.natives')
     output_path = getattr(args, 'output')
+    name = getattr(args, 'name')
 
     with tarfile.open(model_tar, 'r') as tar:
         tar.extractall(os.path.dirname(model_tar))
@@ -184,6 +190,9 @@ def main() -> pd.DataFrame:
     df_results = df.copy()
     df_results["dockq"] = results
     df_results = df_results.drop(columns=["model_path", "native_path", "json_path"])
+    output_path_parent = os.path.dirname(output_path)
+    output_path = os.path.join(output_path_parent, f"{name}.dockq.csv")
+
     df_results.to_csv(output_path, index=False)
     return df_results
 
