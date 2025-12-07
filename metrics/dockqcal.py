@@ -187,6 +187,8 @@ def main() -> pd.DataFrame:
             metrics = parse_json(json_output)
             dockq_score = metrics.get("GlobalDockQ", None)
             if dockq_score is not None:
+                with open(log_file, 'a') as f:
+                    f.write(f"DockQ score for model {model_pdb} vs native {native_pdb}: {dockq_score}\n")
                 dockq_score = round(dockq_score, 3)
             results.append(dockq_score)
     except Exception as e:
@@ -197,13 +199,17 @@ def main() -> pd.DataFrame:
     #     if os.path.exists(tmp_dir):
     #         shutil.rmtree(tmp_dir)  
     
+    with open(log_file, 'a') as f:
+        f.write(f"DockQ calculation completed. Results for {len(results)} models.\nLength of results: {df_results.shape}\n")
     df_results = df.copy()
     df_results["dockq"] = results
+    with open(log_file, 'a') as f:
+        f.write(f"Final DataFrame shape: {df_results.shape}\n")
     df_results = df_results.drop(columns=["model_path", "native_path", "json_path"])
     output_path_parent = os.path.dirname(output_path)
-    output_path = os.path.join(output_path_parent, f"{name}.dockq.csv")
+    output_path_final = os.path.join(output_path_parent, f"{name}.dockq.csv")
 
-    df_results.to_csv(output_path, index=False)
+    df_results.to_csv(output_path_final, index=False)
     return df_results
 
 
