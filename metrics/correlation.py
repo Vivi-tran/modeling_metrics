@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-BASE = parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def compute_correlations(
@@ -19,20 +19,6 @@ def compute_correlations(
 ) -> pd.DataFrame:
     """
     Compute Pearson/Spearman correlation between each feature and target_col.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame containing feature columns and the target column.
-    methods : sequence of {"pearson", "spearman"}
-        Which correlation measures to compute.
-    features : sequence of str, optional
-        List of feature column names to compute correlations for.
-
-    Returns
-    -------
-    pd.DataFrame
-        Rows = features, columns = [feature, metric, r, p_value].
     """
     target_col = "dockq"
     if target_col not in df.columns:
@@ -44,33 +30,54 @@ def compute_correlations(
     rows = []
     for feat in features:
         x = df[feat].astype(float).values
-
-        if "pearson" in metrics:
-            r_p, p_p = pearsonr(x, y)
-            rows.append(
-                {
+        
+        # Check if feature has constant values
+        if len(np.unique(x)) <= 1:
+            print(f"Warning: Feature '{feat}' has constant values. Correlation undefined.")
+            # Add NaN results for constant features
+            if "pearson" in metrics:
+                rows.append({
                     "feature": feat,
-                    "metric": "pearson",
-                    "r": round(float(r_p), 2),
-                    "p_value": round(float(p_p), 2),
-                }
-            )
-
-        if "spearman" in metrics:
-            r_s, p_s = spearmanr(x, y)
-            rows.append(
-                {
+                    "metric": "pearson", 
+                    "r": np.nan,
+                    "p_value": np.nan,
+                })
+            if "spearman" in metrics:
+                rows.append({
                     "feature": feat,
                     "metric": "spearman",
-                    "r": round(float(r_s), 2),
-                    "p_value": round(float(p_s), 2),
-                }
-            )
+                    "r": np.nan, 
+                    "p_value": np.nan,
+                })
+            continue
+
+        if "pearson" in metrics:
+            try:
+                r_p, p_p = pearsonr(x, y)
+                rows.append({
+                    "feature": feat,
+                    "metric": "pearson",
+                    "r": round(float(r_p), 3),
+                    "p_value": round(float(p_p), 3),
+                })
+            except Exception as e:
+                print(f"Error computing Pearson correlation for {feat}: {e}")
+                
+        if "spearman" in metrics:
+            try:
+                r_s, p_s = spearmanr(x, y)
+                rows.append({
+                    "feature": feat,
+                    "metric": "spearman",
+                    "r": round(float(r_s), 3),
+                    "p_value": round(float(p_s), 3),
+                })
+            except Exception as e:
+                print(f"Error computing Spearman correlation for {feat}: {e}")
 
     return pd.DataFrame(rows).sort_values(
         ["feature", "metric", "r"], ascending=[True, True, False]
     )
-
 
 def correlation(
     df: pd.DataFrame,
@@ -86,7 +93,6 @@ def correlation(
             method_df = df
         elif method_name == "rank1":
             method_df = df[df["rank"] == 1]
-            print(method_df)
         elif method_name == "best_dockq":
             idx_best = df.groupby("id")["dockq"].idxmax()
             method_df = df.loc[idx_best]
@@ -142,13 +148,13 @@ def build_correlation_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--data",
+        "--data.dockq",
         required=True,
         help="Path to model data table (CSV) with features and 'dockq' column.",
     )
 
     parser.add_argument(
-        "--output",
+        "--data.correlation",
         required=True,
         help="Output path for correlation table (CSV/TSV decided by extension).",
     )
@@ -169,8 +175,8 @@ def build_correlation_parser() -> argparse.ArgumentParser:
     # Change methods to accept comma-separated string like features
     parser.add_argument(
         "--methods",
-        default="all,rank001,best_dockq",
-        help="Comma-separated list of correlation methods to use (Available: all,rank001,best_dockq).",
+        default="all,rank1,best_dockq",
+        help="Comma-separated list of correlation methods to use (Available: all,rank1,best_dockq).",
     )
     return parser
 
@@ -180,7 +186,9 @@ def main() -> None:
     args = parser.parse_args()
 
     # Load main data
-    df = pd.read_csv(args.data)
+    data_path = getattr(args, 'data.dockq')
+    output_path = getattr(args, 'data.correlation')
+    df = pd.read_csv(data_path)
 
     metrics = [metric.strip() for metric in args.metrics.split(",")]
     methods = [method.strip() for method in args.methods.split(",")]
@@ -193,10 +201,10 @@ def main() -> None:
         features=features,
     )
 
-    if args.output.endswith(".tsv"):
-        corr_df.to_csv(args.output, sep="\t", index=False)
+    if output_path.endswith(".tsv"):
+        corr_df.to_csv(output_path, sep="\t", index=False)
     else:
-        corr_df.to_csv(args.output, index=False)
+        corr_df.to_csv(output_path, index=False)
 
 if __name__ == "__main__":
     main()

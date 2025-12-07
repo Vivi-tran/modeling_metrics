@@ -3,34 +3,51 @@ from __future__ import annotations
 import os
 import argparse
 import json
+import shutil
 import subprocess
 from typing import Dict, Any, List
+import sys
+from pathlib import Path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
 
 import pandas as pd
+import tarfile
 
-BASE = parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NATIVES_DIR = os.path.join(BASE, "data", "natives", "structures")
-MODELS_DIR = os.path.join(BASE, "data", "models", "structures")
+def define_path(model_dir: str, native_dir: str) -> pd.DataFrame:
 
-
-def define_path(model_metadata: str, native_metadata: str) -> str:
-
+    model_metadata = next(Path(model_dir).glob("*.csv"), None)
+    native_metadata = next(Path(native_dir).glob("*.csv"), None)
     df_model = pd.read_csv(model_metadata)
     df_native = pd.read_csv(native_metadata)
 
     ids = df_model["id"].tolist()
     ranks = df_model["rank"].tolist()
+
+    pdb_files = list(Path(model_dir).glob("*.pdb"))
+    cif_files = list(Path(model_dir).glob("*.cif"))
+    
+    if pdb_files:
+        format = "pdb"
+    elif cif_files:
+        format = "cif"
+    else:
+        raise FileNotFoundError(f"No PDB or CIF files found in {model_dir}")
+
     model_paths = []
     native_paths = []
     json_paths = []
+    os.makedirs(os.path.join(model_dir, "tmp"), exist_ok=True)
+
     for id, rank in zip(ids, ranks):
-        rank = str(rank).zfill(3)
-        model_path = os.path.join(MODELS_DIR, f"{id}-{rank}.pdb")
-        native_path = os.path.join(NATIVES_DIR, f"{id}.pdb")
-        json_path = os.path.join(BASE, "data", "out", f"{id}-{rank}.json")
+        rank = str(rank)
+        model_path = os.path.join(model_dir, f"{id}_{rank}.{format}")
+        native_path = os.path.join(native_dir, f"{id}.pdb")
+        json_path = os.path.join(model_dir, "tmp", f"{id}_{rank}.json")
         model_paths.append(model_path)
         native_paths.append(native_path)
         json_paths.append(json_path)
+
     df = df_model.copy()
     df[["model_path", "native_path", "json_path"]] = pd.DataFrame(
         list(zip(model_paths, native_paths, json_paths)),
@@ -101,14 +118,14 @@ def build_dockq_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--model",
+        "--data.models",
         required=True,
-        help="Path to model metadata CSV file.",
+        help="Path to model tar file (e.g., AFm.tar).",
     )
     parser.add_argument(
-        "--native",
+        "--data.natives",
         required=True,
-        help="Path to native metadata CSV file.",
+        help="Path to native tar file (e.g., AFm.natives.tar).",
     )
     parser.add_argument(
         "--output",
@@ -122,32 +139,52 @@ def build_dockq_parser() -> argparse.ArgumentParser:
 def main() -> pd.DataFrame:
     parser = build_dockq_parser()
     args = parser.parse_args()
-    model_metadata = args.model
-    native_metadata = args.native
+    model_tar = getattr(args, 'data.models')
+    native_tar = getattr(args, 'data.natives')
+    output_path = getattr(args, 'output')
 
-    df = define_path(model_metadata, native_metadata)
+    with tarfile.open(model_tar, 'r') as tar:
+        tar.extractall(os.path.dirname(model_tar))
+    with tarfile.open(native_tar, 'r') as tar:
+        tar.extractall(os.path.dirname(native_tar))
+
+    model_dir = model_tar.replace('.tar', '')
+    native_dir = os.path.join(os.path.dirname(native_tar), 'natives')
+
+    df = define_path(model_dir, native_dir)
     results = []
 
-    for index, row in df.iterrows():
-        model_pdb = row["model_path"]
-        native_pdb = row["native_path"]
-        native_chain = row["chains_native"]
-        model_chain = row["chains_model"]
-        mapping = f"{model_chain}:{native_chain}"
-        json_output = row["json_path"]
-        run_dockq(
-            model_pdb=model_pdb,
-            native_pdb=native_pdb,
-            json_output=json_output,
-            mapping=mapping,
-        )
-        metrics = parse_json(json_output)
-        dockq_score = round(metrics.get("GlobalDockQ", None), 2)
-        results.append(dockq_score)
+    tmp_dir = os.path.join(model_dir, "tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    
+    try:
+        for index, row in df.iterrows():
+            model_pdb = row["model_path"]
+            native_pdb = row["native_path"]
+            native_chain = row["chains_native"]
+            model_chain = row["chains_model"]
+            mapping = f"{model_chain}:{native_chain}"
+            json_output = row["json_path"]
+            
+            run_dockq(
+                model_pdb=model_pdb,
+                native_pdb=native_pdb,
+                json_output=json_output,
+                mapping=mapping,
+            )
+            metrics = parse_json(json_output)
+            dockq_score = metrics.get("GlobalDockQ", None)
+            if dockq_score is not None:
+                dockq_score = round(dockq_score, 3)
+            results.append(dockq_score)
+    finally:
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)  
+    
     df_results = df.copy()
-    df_results["dockq"] = pd.DataFrame(results, columns=["dockq"])
+    df_results["dockq"] = results
     df_results = df_results.drop(columns=["model_path", "native_path", "json_path"])
-    df_results.to_csv(args.output, index=False)
+    df_results.to_csv(output_path, index=False)
     return df_results
 
 
