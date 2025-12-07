@@ -33,6 +33,11 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to write DockQ values added to the metadata table.",
     )
+    dockq_subparser.add_argument(
+        "--name",
+        default="AFMultimer",
+        help="Name of the modeling method (default: AFMultimer).",
+    )
 
     # Correlation subparser - manually define arguments
     corr_subparser = subparsers.add_parser("correlation", help="Compute correlations")
@@ -61,6 +66,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="all,rank001,best_dockq",
         help="Comma-separated list of correlation methods to use (Available: all,rank001,best_dockq).",
     )
+    corr_subparser.add_argument(
+        "--name",
+        default="AFMultimer",
+        help="Name of the modeling method (default: AFMultimer).",
+    )
 
     return parser
 
@@ -72,7 +82,7 @@ def main() -> None:
         from metrics.dockqcal import main as dockq_main
         
         original_argv = sys.argv
-        sys.argv = ['dockq', '--data.models', getattr(args, 'data.models'), '--data.natives', getattr(args, 'data.natives'), '--output', args.output]
+        sys.argv = ['dockq', '--data.models', getattr(args, 'data.models'), '--data.natives', getattr(args, 'data.natives'), '--output', args.output, '--name', args.name]
         try:
             dockq_main()
         finally:
@@ -84,7 +94,7 @@ def main() -> None:
             
             original_argv = sys.argv
             sys.argv = ['correlation', '--data.dockq', getattr(args, 'data.dockq'), '--data.correlation', getattr(args, 'data.correlation'), 
-                       '--metrics', args.metrics, '--features', args.features, '--methods', args.methods]
+                       '--metrics', args.metrics, '--features', args.features, '--methods', args.methods, '--name', args.name]
             try:
                 corr_main()
             finally:

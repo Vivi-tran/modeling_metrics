@@ -159,7 +159,7 @@ def build_correlation_parser() -> argparse.ArgumentParser:
         help="Output path for correlation table (CSV/TSV decided by extension).",
     )
 
-    # Change metrics to accept comma-separated string like features
+    # Accept comma-separated string
     parser.add_argument(
         "--metrics",
         default="pearson,spearman",
@@ -172,12 +172,19 @@ def build_correlation_parser() -> argparse.ArgumentParser:
         help="Comma-separated list of feature columns (Available: ptm,plddt,iptm).",
     )
 
-    # Change methods to accept comma-separated string like features
+    # Accept comma-separated string
     parser.add_argument(
         "--methods",
         default="all,rank1,best_dockq",
         help="Comma-separated list of correlation methods to use (Available: all,rank1,best_dockq).",
     )
+
+    parser.add_argument(
+        "--name",
+        default="AFMultimer",
+        help="Name of the modeling method (default: AFMultimer).",
+    )
+
     return parser
 
 
@@ -188,6 +195,7 @@ def main() -> None:
     # Load main data
     data_path = getattr(args, 'data.dockq')
     output_path = getattr(args, 'data.correlation')
+    name = getattr(args, 'name')
     df = pd.read_csv(data_path)
 
     metrics = [metric.strip() for metric in args.metrics.split(",")]
@@ -200,6 +208,8 @@ def main() -> None:
         metrics=metrics,
         features=features,
     )
+    output_path_parent = os.path.dirname(output_path)
+    output_path = os.path.join(output_path_parent, f"{name}.correlation.csv")
 
     if output_path.endswith(".tsv"):
         corr_df.to_csv(output_path, sep="\t", index=False)
