@@ -161,8 +161,12 @@ def main() -> pd.DataFrame:
     # /home/nguyen/benchmarks/modeling/out/data/Chai-1/.c65a848c554721cacf9e59e8f1319d5df0ad6037bfecff2949df2f3f2a4ba569/Chai-1/Beta_endorphin-mu_opioid_1.cif
     df = define_path(model_dir, native_dir)
     results = []
-    print(model_dir)
     tmp_dir = os.path.join(model_dir, "tmp")
+    log_file = os.path.join(model_dir, f"{name}_model_dir.log")
+    with open(log_file, 'w') as f:
+        f.write(f"Model directory: {model_dir}\n Created tmp dir at: {tmp_dir}\n")
+
+
     os.makedirs(tmp_dir, exist_ok=True)
     
     try:
