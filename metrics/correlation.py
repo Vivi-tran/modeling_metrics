@@ -209,10 +209,7 @@ def main() -> None:
         features=features,
     )
 
-    if output_path.endswith(".tsv"):
-        corr_df.to_csv(args.output_dir, f"{name}.correlation.csv", sep="\t", index=False)
-    else:
-        corr_df.to_csv(args.output_dir, f"{name}.correlation.csv", index=False)
+    corr_df.to_csv(args.output_dir, f"{name}.correlation.csv", index=False)
 
 if __name__ == "__main__":
     main()
