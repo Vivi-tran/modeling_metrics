@@ -209,7 +209,7 @@ def main() -> None:
         features=features,
     )
 
-    corr_df.to_csv(args.output_dir, f"{name}.correlation.csv", index=False)
+    corr_df.to_csv(os.path.join(args.output_dir, f"{name}.correlation.csv"), index=False)
 
 if __name__ == "__main__":
     main()
