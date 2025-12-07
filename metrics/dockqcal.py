@@ -162,10 +162,6 @@ def main() -> pd.DataFrame:
     df = define_path(model_dir, native_dir)
     results = []
     tmp_dir = os.path.join(model_dir, "tmp")
-    log_file = os.path.join(model_dir, f"{name}_model_dir.log")
-    with open(log_file, 'w') as f:
-        f.write(f"Model directory: {model_dir}\n Created tmp dir at: {tmp_dir}\n")
-
 
     os.makedirs(tmp_dir, exist_ok=True)
     
@@ -187,28 +183,14 @@ def main() -> pd.DataFrame:
             metrics = parse_json(json_output)
             dockq_score = metrics.get("GlobalDockQ", None)
             if dockq_score is not None:
-                with open(log_file, 'a') as f:
-                    f.write(f"DockQ score for model {model_pdb} vs native {native_pdb}: {dockq_score}\n")
                 dockq_score = round(dockq_score, 3)
             results.append(dockq_score)
-    except Exception as e:
-        with open(log_file, 'a') as f:
-            f.write(f"Error during DockQ calculation: {e}\n")
-        raise e
-    # finally:
-    #     if os.path.exists(tmp_dir):
-    #         shutil.rmtree(tmp_dir)  
-    
-    with open(log_file, 'a') as f:
-        f.write(f"DockQ calculation completed. Results for {len(results)} models.\nLength of results: {len(results)}\n")
+    finally:
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)  
     df_results = df.copy()
     df_results["dockq"] = results
-    with open(log_file, 'a') as f:
-        f.write(f"Final DataFrame shape: {df_results.shape}\n")
     df_results = df_results.drop(columns=["model_path", "native_path", "json_path"])
-
-    with open(log_file, 'a') as f:
-        f.write(f"Actual output path: {os.path.join(args.output_dir, f"{name}.dockq.csv")}\n")
     df_results.to_csv(os.path.join(args.output_dir, f"{name}.dockq.csv"), index=False)
     return df_results
 

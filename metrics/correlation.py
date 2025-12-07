@@ -208,8 +208,7 @@ def main() -> None:
         metrics=metrics,
         features=features,
     )
-    output_path_parent = os.path.dirname(output_path)
-    output_path = os.path.join(output_path_parent, f"{name}.correlation.csv")
+    output_path = os.path.join(args.output_dir, f"{name}.correlation.csv")
 
     if output_path.endswith(".tsv"):
         corr_df.to_csv(output_path, sep="\t", index=False)
