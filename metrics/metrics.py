@@ -12,17 +12,12 @@ def build_parser() -> argparse.ArgumentParser:
         description="Compute DockQ as ground-truth and correlation between model metrics and ground-truth data."
     )
 
-    # Add mutually exclusive group for commands
-    command_group = parser.add_mutually_exclusive_group(required=True)
-    command_group.add_argument(
-        "--dockq", 
-        action="store_true",
-        help="Calculate DockQ score"
-    )
-    command_group.add_argument(
-        "--correlation", 
-        action="store_true",
-        help="Compute correlations"
+    # Add step argument
+    parser.add_argument(
+        "--step", 
+        required=True,
+        choices=["dockq", "correlation"],
+        help="Step to execute: 'dockq' to calculate DockQ score, 'correlation' to compute correlations"
     )
 
     # DockQ arguments
@@ -73,10 +68,10 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.dockq:
+    if args.step == "dockq":
         # Validate required arguments for dockq
         if not getattr(args, 'data.models') or not getattr(args, 'data.natives') or not args.output_dir:
-            parser.error("--dockq requires --data.models, --data.natives, and --output_dir")    
+            parser.error("--step dockq requires --data.models, --data.natives, and --output_dir")    
             
         from metrics.dockqcal import main as dockq_main
         
@@ -87,16 +82,16 @@ def main() -> None:
         finally:
             sys.argv = original_argv
             
-    elif args.correlation:
+    elif args.step == "correlation":
         # Validate required arguments for correlation
-        if not getattr(args, 'data.dockq') or not getattr(args, 'output_dir'):
-            parser.error("--correlation requires --data.dockq and --output_dir")
+        if not getattr(args, 'data.dockq') or not args.output_dir:
+            parser.error("--step correlation requires --data.dockq and --output_dir")
 
         try:
             from metrics.correlation import main as corr_main
             
             original_argv = sys.argv
-            sys.argv = ['--correlation', '--data.dockq', getattr(args, 'data.dockq'), '--output_dir', getattr(args, 'output_dir'),
+            sys.argv = ['--correlation', '--data.dockq', getattr(args, 'data.dockq'), '--output_dir', args.output_dir,
                        '--metrics', args.metrics, '--features', args.features, '--methods', args.methods, '--name', args.name]
             try:
                 corr_main()
