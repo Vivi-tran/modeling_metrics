@@ -200,7 +200,7 @@ def main() -> pd.DataFrame:
     #         shutil.rmtree(tmp_dir)  
     
     with open(log_file, 'a') as f:
-        f.write(f"DockQ calculation completed. Results for {len(results)} models.\nLength of results: {df_results.shape}\n")
+        f.write(f"DockQ calculation completed. Results for {len(results)} models.\nLength of results: {len(results)}\n")
     df_results = df.copy()
     df_results["dockq"] = results
     with open(log_file, 'a') as f:
