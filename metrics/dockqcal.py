@@ -209,6 +209,8 @@ def main() -> pd.DataFrame:
     output_path_parent = os.path.dirname(output_path)
     output_path_final = os.path.join(output_path_parent, f"{name}.dockq.csv")
 
+    with open(log_file, 'a') as f:
+        f.write(f"Actual output path: {output_path_final}\n")
     df_results.to_csv(output_path_final, index=False)
     return df_results
 
