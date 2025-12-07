@@ -192,6 +192,7 @@ def main() -> None:
     parser = build_correlation_parser()
     args = parser.parse_args()
 
+
     # Load main data
     data_path = getattr(args, 'metrics.dockq')
     output_path = getattr(args, 'output_dir')
@@ -208,7 +209,7 @@ def main() -> None:
         metrics=metrics,
         features=features,
     )
-    log_path = os.path.join(args.output_dir, f"{name}_correlation.log")
+    log_path = os.path.join(os.getcwd(), f"{name}_correlation.log")
     with open(log_path, 'w') as f:
         f.write(f"Correlation results saved to {os.path.join(args.output_dir, f'{name}.correlation.csv')}\n")
         f.write(f"Results: {corr_df.shape}\n")
