@@ -148,7 +148,7 @@ def build_correlation_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--data.dockq",
+        "--metrics.dockq",
         required=True,
         help="Path to model data table (CSV) with features and 'dockq' column.",
     )
@@ -193,7 +193,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # Load main data
-    data_path = getattr(args, 'data.dockq')
+    data_path = getattr(args, 'metrics.dockq')
     output_path = getattr(args, 'output_dir')
     name = getattr(args, 'name')
     df = pd.read_csv(data_path)

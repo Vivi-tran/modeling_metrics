@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     
     # Correlation arguments
     parser.add_argument(
-        "--data.dockq",
+        "--metrics.dockq",
         help="Path to model data table (CSV) with features and 'dockq' column.",
     )
     parser.add_argument(
@@ -85,14 +85,14 @@ def main() -> None:
             
     elif args.step == "correlation":
         # Validate required arguments for correlation
-        if not getattr(args, 'data.dockq') or not args.output_dir:
-            parser.error("--step correlation requires --data.dockq and --output_dir")
+        if not getattr(args, 'metrics.dockq') or not args.output_dir:
+            parser.error("--step correlation requires --metrics.dockq and --output_dir")
 
         try:
             from metrics.correlation import main as corr_main
             
             original_argv = sys.argv
-            sys.argv = ['--correlation', '--data.dockq', getattr(args, 'data.dockq'), '--output_dir', args.output_dir,
+            sys.argv = ['--correlation', '--metrics.dockq', getattr(args, 'metrics.dockq'), '--output_dir', args.output_dir,
                        '--metrics', args.metrics, '--features', args.features, '--methods', args.methods, '--name', args.name]
             try:
                 corr_main()
