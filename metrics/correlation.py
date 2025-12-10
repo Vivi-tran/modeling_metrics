@@ -15,7 +15,6 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def compute_correlations(
     df: pd.DataFrame,
     metrics: Sequence[str] = ("pearson", "spearman"),
-    features: Sequence[str] = ("ptm", "plddt", "iptm"),
 ) -> pd.DataFrame:
     """
     Compute Pearson/Spearman correlation between each feature and target_col.
@@ -23,8 +22,11 @@ def compute_correlations(
     target_col = "dockq"
     if target_col not in df.columns:
         raise ValueError(f"Target column '{target_col}' not in DataFrame.")
-    if features is None:
-        features = ["ptm", "plddt", "iptm"]
+
+    # Exclude specified columns
+    exclude = {"id", "rank", "chains_model", "native_pdb", "chains_native", "dockq", "irmsd", "lrsd", "fnat"}
+    features = [col for col in df.columns if col not in exclude]
+
     y = df[target_col].astype(float).values
 
     rows = []
@@ -83,7 +85,6 @@ def correlation(
     df: pd.DataFrame,
     methods: Sequence[str] = ("all", "rank1", "best_dockq"),
     metrics: Sequence[str] = ("pearson", "spearman"),
-    features: Sequence[str] = ("ptm", "plddt", "iptm"),
 ) -> pd.DataFrame:
 
     all_results = []
@@ -99,16 +100,17 @@ def correlation(
         else:
             continue  # Skip unknown methods
 
-        # Check if we have enough data for correlation
         if len(method_df) <= 2:
             print(
                 f"Warning: Method '{method_name}' resulted in only {len(method_df)} rows. Skipping correlation computation."
             )
             continue
 
-        # Check if we have the required columns
+        # Get features for this method
+        exclude = {"id", "rank", "chains_model", "native_pdb", "chains_native", "dockq", "irmsd", "lrsd", "fnat"}
+        features = [col for col in method_df.columns if col not in exclude]
         missing_features = [f for f in features if f not in method_df.columns]
-        if missing_features:
+        if not features or missing_features:
             print(
                 f"Warning: Method '{method_name}' missing features: {missing_features}. Skipping."
             )
@@ -121,7 +123,7 @@ def correlation(
         # Compute correlations for this method
         try:
             results = compute_correlations(
-                df=method_df, metrics=metrics, features=features
+                df=method_df, metrics=metrics
             )
 
             # Add method column to identify which method was used
@@ -166,12 +168,6 @@ def build_correlation_parser() -> argparse.ArgumentParser:
         help="Comma-separated list of correlation metrics to compute (Available: pearson,spearman).",
     )
 
-    parser.add_argument(
-        "--features",
-        default="ptm,plddt,iptm",
-        help="Comma-separated list of feature columns (Available: ptm,plddt,iptm).",
-    )
-
     # Accept comma-separated string
     parser.add_argument(
         "--methods",
@@ -201,13 +197,11 @@ def main() -> None:
 
     metrics = [metric.strip() for metric in args.metrics.split(",")]
     methods = [method.strip() for method in args.methods.split(",")]
-    features = [feat.strip() for feat in args.features.split(",")]
 
     corr_df = correlation(
         df=df,
         methods=methods,
         metrics=metrics,
-        features=features,
     )
     # log_path = os.path.join(os.getcwd(), f"{name}_correlation.log")
     # with open(log_path, 'w') as f:
