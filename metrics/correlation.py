@@ -94,7 +94,7 @@ def correlation(
         elif method_name == "rank1":
             method_df = df[df["rank"] == 1]
         elif method_name == "best_dockq":
-            idx_best = df.groupby("id")["dockq"].idxmax()
+            idx_best = df.groupby(['id','native_pdb'])["dockq"].idxmax()
             method_df = df.loc[idx_best]
         else:
             continue  # Skip unknown methods
