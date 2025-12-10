@@ -142,7 +142,7 @@ def mean_dockq(dockq_df: pd.DataFrame) -> pd.DataFrame:
     mean_rank1 = dockq_df[dockq_df['rank'] == 1]['dockq'].mean()
 
     # Best dockq per id (max dockq for each group)
-    best_dockq_per_id = dockq_df.groupby('id')['dockq'].max()
+    best_dockq_per_id = dockq_df.groupby(['id','native_pdb'])['dockq'].max()
     mean_best_dockq = best_dockq_per_id.mean()
 
     # Output to CSV
