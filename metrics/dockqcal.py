@@ -157,8 +157,6 @@ def main() -> pd.DataFrame:
 
     model_dir = model_tar.replace('.tar', '')
     native_dir = os.path.join(os.path.dirname(native_tar), 'natives')
-    # /home/nguyen/benchmarks/modeling/out/data/Chai-1/.c65a848c554721cacf9e59e8f1319d5df0ad6037bfecff2949df2f3f2a4ba569/Chai-1.tar
-    # /home/nguyen/benchmarks/modeling/out/data/Chai-1/.c65a848c554721cacf9e59e8f1319d5df0ad6037bfecff2949df2f3f2a4ba569/Chai-1/Beta_endorphin-mu_opioid_1.cif
     df = define_path(model_dir, native_dir)
     results = []
     tmp_dir = os.path.join(model_dir, "tmp")
@@ -182,14 +180,44 @@ def main() -> pd.DataFrame:
             )
             metrics = parse_json(json_output)
             dockq_score = metrics.get("GlobalDockQ", None)
+            others = metrics.get("best_result", {})
+            other_scores = others.get(native_chain, {})
+
+            irmsd = None
+            lrsd = None
+            fnat = None
+            
+            if other_scores:
+                irmsd = other_scores.get("iRMSD", None)
+                lrsd = other_scores.get("LRMSD", None)
+                fnat = other_scores.get("fnat", None)
             if dockq_score is not None:
                 dockq_score = round(dockq_score, 3)
-            results.append(dockq_score)
+            if irmsd is not None:
+                irmsd = round(irmsd, 3)
+            if lrsd is not None:
+                lrsd = round(lrsd, 3)
+            if fnat is not None:
+                fnat = round(fnat, 3)
+            
+            result_row = {
+                "dockq": dockq_score,
+                "irmsd": irmsd,
+                "lrsd": lrsd,
+                "fnat": fnat,
+            }
+            results.append(result_row)
     finally:
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)  
+    
     df_results = df.copy()
-    df_results["dockq"] = results
+    
+    # Convert results to separate columns instead of single nested column
+    results_df = pd.DataFrame(results)
+    for col in results_df.columns:
+        df_results[col] = results_df[col]
+    
     df_results = df_results.drop(columns=["model_path", "native_path", "json_path"])
     df_results.to_csv(os.path.join(args.output_dir, f"{name}.dockq.csv"), index=False)
     return df_results
