@@ -20,6 +20,7 @@ def define_path(model_dir: str, native_dir: str) -> pd.DataFrame:
     native_metadata = next(Path(native_dir).glob("*.csv"), None)
     df_model = pd.read_csv(model_metadata)
     df_native = pd.read_csv(native_metadata)
+    df_model = df_model[df_model['id'].isin(df_native['id'])]
 
     ids = df_model["id"].tolist()
     ranks = df_model["rank"].tolist()
@@ -34,29 +35,50 @@ def define_path(model_dir: str, native_dir: str) -> pd.DataFrame:
     else:
         raise FileNotFoundError(f"No PDB or CIF files found in {model_dir}")
 
-    model_paths = []
-    native_paths = []
-    json_paths = []
     os.makedirs(os.path.join(model_dir, "tmp"), exist_ok=True)
+
+    # Collect all rows for the final dataframe
+    all_rows = []
 
     for id, rank in zip(ids, ranks):
         rank = str(rank)
         model_path = os.path.join(model_dir, f"{id}_{rank}.{format}")
-        native_path = os.path.join(native_dir, f"{id}.pdb")
-        json_path = os.path.join(model_dir, "tmp", f"{id}_{rank}.json")
-        model_paths.append(model_path)
-        native_paths.append(native_path)
-        json_paths.append(json_path)
+        
+        # Find all native PDB files matching the pattern id*.pdb
+        native_pattern = f"{id}*.pdb"
+        native_files = list(Path(native_dir).glob(native_pattern))
+        
+        if not native_files:
+            raise FileNotFoundError(f"No native PDB files found for {id} in {native_dir}")
+        
+        # Create a row for each native file pairing
+        for native_file in native_files:
+            native_path = str(native_file)
+            # Extract version identifier from native filename (e.g., 6DDE from DAMGO-mu_opioid_6DDE.pdb)
+            native_basename = native_file.stem  
+            version = native_basename.split('_')[-1] 
+            json_path = os.path.join(model_dir, "tmp", f"{id}_{rank}_{version}.json")
+            
+            # Get the corresponding row from df_model
+            model_row = df_model[(df_model["id"] == id) & (df_model["rank"] == int(rank))].iloc[0].to_dict()
+            
+            # Add path information
+            model_row["model_path"] = model_path
+            model_row["native_path"] = native_path
+            model_row["json_path"] = json_path
+            model_row["native_pdb"] = version
+            
+            all_rows.append(model_row)
 
-    df = df_model.copy()
-    df[["model_path", "native_path", "json_path"]] = pd.DataFrame(
-        list(zip(model_paths, native_paths, json_paths)),
-        columns=["model_path", "native_path", "json_path"],
-    )
-    df = df.merge(df_native, on="id", how="right", suffixes=("_model", "_native"))
-    df.to_csv(os.path.join(model_dir, "debug_dockq_input.csv"), index=False)
+    # Create new dataframe from all rows
+    df = pd.DataFrame(all_rows)
+    
+    # Merge with native metadata based on id
+    df = df.merge(df_native, left_on=["id", "native_pdb"], right_on=["id", "pdb_id"], how="left", suffixes=("_model", "_native"))
+    df.sort_values(by=["id","native_pdb", "rank" ], ascending=[True, True, True], inplace=True)
+    df.drop(columns=["pdb_id"], inplace=True)
+    # df.to_csv(os.path.join(model_dir, "debug_dockq_input.csv"), index=False)
     return df
-
 
 def run_dockq(
     model_pdb: str,
