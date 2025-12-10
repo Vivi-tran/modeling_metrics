@@ -134,6 +134,23 @@ def parse_json(json_path: str) -> Dict[str, Any]:
         data = json.load(f)
     return data
 
+def mean_dockq(dockq_df: pd.DataFrame) -> pd.DataFrame:
+    # Mean dockq for all models
+    mean_all = dockq_df['dockq'].mean()
+
+    # Mean dockq for rank 1 models
+    mean_rank1 = dockq_df[dockq_df['rank'] == 1]['dockq'].mean()
+
+    # Best dockq per id (max dockq for each group)
+    best_dockq_per_id = dockq_df.groupby('id')['dockq'].max()
+    mean_best_dockq = best_dockq_per_id.mean()
+
+    # Output to CSV
+    meandockq_df = pd.DataFrame({
+        'metric': ['all', 'rank1', 'best_dockq'],
+        'value': [round(mean_all, 3), round(mean_rank1, 3), round(mean_best_dockq, 3)]
+    })
+    return meandockq_df
 
 def build_dockq_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -242,6 +259,8 @@ def main() -> pd.DataFrame:
     
     df_results = df_results.drop(columns=["model_path", "native_path", "json_path"])
     df_results.to_csv(os.path.join(args.output_dir, f"{name}.dockq.csv"), index=False)
+    df_meandockq = mean_dockq(df_results)
+    df_meandockq.to_csv(os.path.join(args.output_dir, f"{name}.meandockq.csv"), index=False)
     return df_results
 
 
