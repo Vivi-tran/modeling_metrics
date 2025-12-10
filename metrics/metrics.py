@@ -40,15 +40,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="pearson,spearman",
         help="Comma-separated list of correlation metrics to compute (Available: pearson,spearman).",
     )
-    parser.add_argument(
-        "--features",
-        default="ptm,plddt,iptm",
-        help="Comma-separated list of feature columns (Available: ptm,plddt,iptm).",
-    )
+
     parser.add_argument(
         "--methods",
-        default="all,rank001,best_dockq",
-        help="Comma-separated list of correlation methods to use (Available: all,rank001,best_dockq).",
+        default="all,rank1,best_dockq",
+        help="Comma-separated list of correlation methods to use (Available: all,rank1,best_dockq).",
     )
     
     # Common arguments
@@ -71,8 +67,7 @@ def main() -> None:
     if args.step == "dockq":
         # Validate required arguments for dockq
         if not getattr(args, 'data.models') or not getattr(args, 'data.natives') or not args.output_dir:
-            parser.error("--step dockq requires --data.models, --data.natives, and --output_dir")    
-            
+            parser.error("--step dockq requires --data.models, --data.natives, and --output_dir")
         from metrics.dockqcal import main as dockq_main
         
         original_argv = sys.argv
@@ -93,7 +88,7 @@ def main() -> None:
             
             original_argv = sys.argv
             sys.argv = ['--correlation', '--metrics.dockq', getattr(args, 'metrics.dockq'), '--output_dir', args.output_dir,
-                       '--metrics', args.metrics, '--features', args.features, '--methods', args.methods, '--name', args.name]
+                       '--metrics', args.metrics, '--methods', args.methods, '--name', args.name]
             try:
                 corr_main()
             finally:
